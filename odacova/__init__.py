@@ -1,5 +1,6 @@
 import json
 import aiohttp
+import asyncio
 from typing import Dict, Any, List, Optional, Union
 
 class Odacova:
@@ -23,6 +24,7 @@ class Odacova:
         self.bot_token = bot_token
         self.session = aiohttp.ClientSession()
         self.headers = {'Authorization': f'Bearer {bot_token}'}
+        self.latest_message = None
 
         if not bot_token:
             raise ValueError('Missing bot token.')
@@ -131,20 +133,6 @@ class Odacova:
         async with self.session.get(f'{self.base_url}/route_bot', headers=self.headers) as response:
             return await self._handle_response(response) # type: ignore
 
-    async def on_ready(self):
-        """Called when the bot is ready to start processing events."""
-        pass  # Implement your logic here
-    
-    async def on_message(self, message):
-        """Called when a new message is received.
-        
-        Parameters:
-        -----------
-        message : dict
-            A dictionary containing information about the received message.
-        """  
-        pass  # Implement your logic here
-
     async def post_message(self, message: str, token: str) -> Optional[Union[List[Dict[str, Any]], None]]:
         """Send a message to the server.
         
@@ -156,10 +144,10 @@ class Odacova:
             The user to send the message to. If None, the message is sent to the server.
         """  
         
-        test_headers = {"Content-Type": "application/json"}
-        test_data = {"message": message, "token": token}
+        headers = {"Content-Type": "application/json"}
+        data = {"message": message, "token": token}
         
-        async with self.session.post(f'{self.base_url}/chat', headers=test_headers, json=test_data) as response:
+        async with self.session.post(f'{self.base_url}/chat', headers=headers, json=data) as response:
             return await self._handle_response(response) # type: ignore
 
     async def get_message(self) -> Optional[Union[List[Dict[str, Any]], None]]:
@@ -174,39 +162,19 @@ class Odacova:
         """  
         async with self.session.get(f'{self.base_url}/chat', headers=self.headers) as response:
             return await self._handle_response(response) # type: ignore
-
-    async def on_message_edit(self, message):
-        """Called when a message is edited.
-        
-        Parameters:
-        -----------
-        message : dict
-            A dictionary containing information about the edited message.
-        """  
-        pass  # Implement your logic here
-
-    async def on_member_join(self, message):
-        """Called when a new member joins the server.
-        
-        Parameters:
-        -----------
-        message : dict
-            A dictionary containing information about the new member.
-        """  
-        pass  # Implement your logic here
-    
-    async def on_member_leave(self, message):
-        """Called when a member leaves the server.
-        
-        Parameters:
-        -----------
-        message : dict
-            A dictionary containing information about the member who left.
-        """  
-        pass # Implement your logic here
     
     async def terminate(self):
         """Close the client session and frees memory."""
         await self.session.close()
+
+    async def on_message(self):
         
-    
+        async with self.session.get(f'{self.base_url}/chat?latest=true', headers=self.headers) as resp:
+            if resp.status == 200:
+                chat = await resp.json()
+
+                if chat and chat[-1]['message'] != self.latest_message:
+                    self.latest_message = chat[-1]['message']
+                    yield chat[-1]['message'], chat[-1]['user']
+
+        await asyncio.sleep(3)
