@@ -144,7 +144,36 @@ class Odacova:
             A dictionary containing information about the received message.
         """  
         pass  # Implement your logic here
-        #await message.channel.send(f'Message received: {message}')
+
+    async def post_message(self, message: str, token: str) -> Optional[Union[List[Dict[str, Any]], None]]:
+        """Send a message to the server.
+        
+        Parameters:
+        -----------
+        message : str
+            The message to send.
+        user : str
+            The user to send the message to. If None, the message is sent to the server.
+        """  
+        
+        test_headers = {"Content-Type": "application/json"}
+        test_data = {"message": message, "token": token}
+        
+        async with self.session.post(f'{self.base_url}/chat', headers=test_headers, json=test_data) as response:
+            return await self._handle_response(response) # type: ignore
+
+    async def get_message(self) -> Optional[Union[List[Dict[str, Any]], None]]:
+        """Get a message from the server.
+        
+        Parameters:
+        -----------
+        message : str
+            The message to send.
+        user : str
+            The user to send the message to. If None, the message is sent to the server.
+        """  
+        async with self.session.get(f'{self.base_url}/chat', headers=self.headers) as response:
+            return await self._handle_response(response) # type: ignore
 
     async def on_message_edit(self, message):
         """Called when a message is edited.
