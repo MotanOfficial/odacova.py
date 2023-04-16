@@ -3,6 +3,14 @@ import aiohttp
 import asyncio
 from typing import Dict, Any, List, Optional, Union
 
+class Command:
+    def __init__(self, name, func):
+        self.name = name
+        self.func = func
+
+    async def execute(self, *args, **kwargs):
+        return await self.func(*args, **kwargs)
+
 class Odacova:
     """A client for interacting with the Odacova API.
 
@@ -26,6 +34,7 @@ class Odacova:
         self.headers = {'Authorization': f'Bearer {bot_token}'}
         self.latest_message = None
         self.prefix = prefix
+        self.commands = {}
 
         if not bot_token:
             raise ValueError('Missing bot token.')
@@ -38,6 +47,13 @@ class Odacova:
         
         if not base_url.endswith('/'):
             self.base_url = f'{base_url}/'
+
+    def command(self, name: str):
+        def decorator(func):
+            cmd = Command(name, func)
+            self.commands[name] = cmd
+            return cmd
+        return decorator
 
     async def _handle_response(self, response: aiohttp.ClientResponse)-> Union[Dict[str, Any], None]:
         """
@@ -169,7 +185,6 @@ class Odacova:
         await self.session.close()
 
     async def on_message(self):
-        
         async with self.session.get(f'{self.base_url}/chat?latest=true', headers=self.headers) as resp:
             if resp.status == 200:
                 chat = await resp.json()
@@ -183,3 +198,15 @@ class Odacova:
                         yield message, user
 
         await asyncio.sleep(3)
+
+    async def on_command(self, prefix):
+        async with self.session.get(f'{self.base_url}/chat?latest=true', headers=self.headers) as resp:
+            if resp.status == 200:
+                chat = await resp.json()
+
+                if chat and chat[-1]['message'] != self.latest_message:
+                    self.latest_message = chat[-1]['message']
+                    message, user = chat[-1]['message'], chat[-1]['user']
+                    if message.startswith(prefix):
+                        command = message[len(prefix):].strip()
+                        yield command, user
