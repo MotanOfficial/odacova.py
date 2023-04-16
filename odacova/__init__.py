@@ -162,9 +162,9 @@ class Odacova:
         """  
         
         headers = {"Content-Type": "application/json"}
-        data = {"message": message, "token": token}
+        data = {"message": message, "bot_token": self.bot_token}
         
-        async with self.session.post(f'{self.base_url}/chat', headers=headers, json=data) as response:
+        async with self.session.post(f'{self.base_url}/chat', headers=self.headers, json=data) as response:
             return await self._handle_response(response) # type: ignore
 
     async def get_message(self) -> Optional[Union[List[Dict[str, Any]], None]]:
