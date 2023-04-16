@@ -11,7 +11,7 @@ class Odacova:
     param bot_token: The authentication token to use when making API requests.
     type bot_token: str
     """
-    def __init__(self, base_url: str, bot_token: str):
+    def __init__(self, base_url: str, bot_token: str, prefix: str = '/'):
         """
         Initialize a new instance of the Odacova client.
 
@@ -25,6 +25,7 @@ class Odacova:
         self.session = aiohttp.ClientSession()
         self.headers = {'Authorization': f'Bearer {bot_token}'}
         self.latest_message = None
+        self.prefix = prefix
 
         if not bot_token:
             raise ValueError('Missing bot token.')
@@ -175,6 +176,10 @@ class Odacova:
 
                 if chat and chat[-1]['message'] != self.latest_message:
                     self.latest_message = chat[-1]['message']
-                    yield chat[-1]['message'], chat[-1]['user']
+                    #yield chat[-1]['message'], chat[-1]['user']
+                    message = chat[-1]['message']
+                    user = chat[-1]['user']
+                    if message.startswith(self.prefix):
+                        yield message, user
 
         await asyncio.sleep(3)
