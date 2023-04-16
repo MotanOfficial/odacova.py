@@ -150,7 +150,7 @@ class Odacova:
         async with self.session.get(f'{self.base_url}/route_bot', headers=self.headers) as response:
             return await self._handle_response(response) # type: ignore
 
-    async def post_message(self, message: str, token: str) -> Optional[Union[List[Dict[str, Any]], None]]:
+    async def post_message(self, message: str) -> Optional[Union[List[Dict[str, Any]], None]]:
         """Send a message to the server.
         
         Parameters:
@@ -160,8 +160,6 @@ class Odacova:
         user : str
             The user to send the message to. If None, the message is sent to the server.
         """  
-        
-        headers = {"Content-Type": "application/json"}
         data = {"message": message, "bot_token": self.bot_token}
         
         async with self.session.post(f'{self.base_url}/chat', headers=self.headers, json=data) as response:
